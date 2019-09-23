@@ -1,3 +1,3 @@
-from .mixins import ReprMixin
+from .mixins import NDArrayReprMixin
 
-__all__ = ['ReprMixin']
+__all__ = ['NDArrayReprMixin']

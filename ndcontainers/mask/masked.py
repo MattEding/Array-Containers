@@ -4,19 +4,49 @@ import itertools
 import numpy as np
 
 from .constants import MASKED, NOMASK
+from ..utils import NDArrayReprMixin
 
 
 __all__ = ['MaskedArray']
 
-class MaskedArray(np.lib.mixins.NDArrayOperatorsMixin):
+class MaskedArray(np.lib.mixins.NDArrayOperatorsMixin, NDArrayReprMixin):
+    """Masked array
+
+    Parameters
+    ----------
+    data : array-like
+
+    mask : array-like (default=None)
+
+    dtype : ... (default=float)
+
+    fill_value : ... (default=nan)
+
+    Attributes
+    ----------
+    data
+    dtype
+    fill_value
+    mask
+    mask_display
+    ndim
+    shape
+    size
+
+    Methods
+    -------
+    reshape
+    """
     mask_display = '--'
 
     def __init__(self, data, mask=None, dtype=float, fill_value=np.nan):
         self.data = np.array(data, dtype=dtype)
+
         if mask is None:
             self.mask = np.zeros_like(self.data, dtype=bool)
         else:
             self.mask = np.array(mask, dtype=bool)
+
         if self.data.shape != self.mask.shape:
             raise ValueError(
                 "'data' and 'mask' do not match with shapes "
@@ -25,8 +55,8 @@ class MaskedArray(np.lib.mixins.NDArrayOperatorsMixin):
 
         self.fill_value = fill_value
 
-    def _formatter_factory(self): #FIXME  %timeit mask: 20ns  _vs_  %timeit ~mask: 46µs
-        #: longest non-masked item        V this `~` is reason enough to _not_ have invert mask API
+    def _formatter_factory(self):
+        #: longest non-masked item
         longest = max(map(str, self.data[~self.mask]), key=len, default="")
         #: use mask_display if longer
         longest = max(len(longest), len(str(self.mask_display)))
@@ -44,33 +74,21 @@ class MaskedArray(np.lib.mixins.NDArrayOperatorsMixin):
 
     def __repr__(self):
         formatter = self._formatter_factory()
-        sig = inspect.signature(type(self))
-        params = list(sig.parameters)
-        name = type(self).__name__
 
-        idxs = np.arange(self.data.size).reshape(self.shape)
         data = np.array2string(
-            idxs,
+            np.arange(self.size).reshape(self.shape),
             separator=", ",
-            prefix=f"{name}({params[0]}=",
-            formatter={'all': formatter}
+            prefix=self._prefix_(0),
+            formatter={'all': formatter},
         )
 
         mask = np.array2string(
             self.mask,
             separator=", ",
-            prefix=f"{name}({params[1]}="
+            prefix=self._prefix_(1),
         )
 
-        head = params[0]
-        width = len(name) + len(head) + 1
-        tail = (p.rjust(width) for p in params[1:])
-        values = (mask, self.dtype, self.fill_value)
-        pair_seq = itertools.chain.from_iterable(zip(tail, values))
-        formats = itertools.chain((name, head, data), pair_seq)
-        text = "{}(" +  ",\n".join("{}={}" for p in params) + ")"
-        return text.format(*formats)
-
+        return self._repr_(data, mask, self.dtype, self.fill_value)
 
     def __str__(self):
         formatter = self._formatter_factory()   
@@ -92,8 +110,9 @@ class MaskedArray(np.lib.mixins.NDArrayOperatorsMixin):
     def __getitem__(self, index):
         if np.isscalar(self.data[index]):
             return self.data[index] if ~self.mask[index] else MASKED
-        return type(self)(self.data[index], self.mask[index], self.fill_value)
-        
+        return type(self)(
+            self.data[index], self.mask[index], self.dtype, self.fill_value
+        )
 
     def __setitem__(self, index, item):
         if item is MASKED:
@@ -110,12 +129,12 @@ class MaskedArray(np.lib.mixins.NDArrayOperatorsMixin):
         self.mask = self.mask.reshape()
 
     @property
-    def ndim(self):
-        return self.data.ndim
-    
-    @property
     def dtype(self):
         return self.data.dtype
+
+    @property
+    def ndim(self):
+        return self.data.ndim
 
     @property
     def shape(self):
@@ -123,4 +142,4 @@ class MaskedArray(np.lib.mixins.NDArrayOperatorsMixin):
 
     @property
     def size(self):
-        return self.data.shape
+        return self.data.size
