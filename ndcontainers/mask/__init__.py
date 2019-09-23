@@ -1,4 +1,4 @@
-from ._masked import MaskedArray
-from ._constants import MASKED, NOMASK
+from .masked import MaskedArray
+from .constants import MASKED, NOMASK
 
 __all__ = ['MaskedArray', 'MASKED', 'NOMASK']
