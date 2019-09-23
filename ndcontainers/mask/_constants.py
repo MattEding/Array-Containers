@@ -1,0 +1,2 @@
+MASKED = object()
+NOMASK = object()
