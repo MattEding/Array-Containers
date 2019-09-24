@@ -1,14 +1,28 @@
 import abc
-import inspect
-# import numpy as np
+
+import numpy as np
 
 
-class BaseSparse(abc.ABC):
-    def __repr__(self):
-        # use inspect.signature to check which parameters are ndarrays
-        # and then dynamically generate the 
-        return f"{type(self).__class__}"
-    
+__all__ = ['SparseArrayABC']
+
+class SparseArrayABC(abc.ABC):
     @abc.abstractmethod
     def __array__(self):
         return 
+
+    
+    @property
+    def dtype(self):
+        return self.data.dtype
+
+    @property
+    def ndim(self):
+        return len(self.shape)
+
+    @property
+    def size(self):
+        return np.prod(self.shape, dtype=int)
+
+    # @abc.abstractmethod
+    # def reshape(self, shape, order='C'):
+    #     pass

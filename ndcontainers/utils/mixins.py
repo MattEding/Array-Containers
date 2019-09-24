@@ -2,15 +2,17 @@ import inspect
 import itertools
 
 
+__all__ = ['NDArrayReprMixin']
+
 class NDArrayReprMixin:
-    def _name_params(self):
-        sig = inspect.signature(type(self))
-        params = tuple(sig.parameters)
+    def _name_params(self, ignore=()):
         name = type(self).__name__
+        sig = inspect.signature(type(self))
+        params = tuple(p for p in sig.parameters if p not in ignore)
         return name, params
 
-    def _repr_(self, *param_values):
-        name, params = self._name_params()
+    def _repr_(self, *param_values, ignore=()):
+        name, params = self._name_params(ignore)
 
         head = params[0]
         width = len(name) + len(head) + 1
