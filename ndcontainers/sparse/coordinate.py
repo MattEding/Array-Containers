@@ -50,36 +50,8 @@ class CoordinateArray(
         return arr
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        if method == '__call__':
-            data = None
-            idxs = None
-            shape = None
-            fill_value = None
-            dtype = None
-
-            # may need to `flatten` shape first with change of `idxs`
-            # to add coo arrays together
-
-            # if add/sub constant -> change fill_value
-            # else ...
-
-            scalars = []
-            for input in inputs:
-                if isinstance(input, Number):
-                    scalars.append(input)
-                elif isinstance(input, type(self)):
-                    scalars.append(input._i)
-                    if shape is not None:
-                        if shape != self.shape:
-                            raise TypeError("inconsistent sizes")
-                    else:
-                        shape = self.shape
-                else:
-                    return NotImplemented
-
-            return type(self)(ufunc(*scalars, **kwargs), idxs, shape, )
-        else:
-            return NotImplemented
+        #TODO
+        return NotImplemented
 
     def reshape(self, *shape, copy=True, order='C'):
         shape = np.array(shape)
