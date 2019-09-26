@@ -25,7 +25,9 @@ class CoordinateArray(
 
         # sum data values that have duplicate indices
         self.idxs, inverse  = np.unique(self.idxs, axis=1, return_inverse=True)
-        self.data = np.bincount(inverse, self.data).astype(self.data.dtype)
+        out = np.zeros_like(self.idxs[0], dtype=self.data.dtype)
+        np.add.at(out, inverse, self.data)
+        self.data = out
 
         # currently this does not allow for 0d/null shape --> sets shape to (1,)
         # the question is should a null CoordinateArray be allowed?
@@ -62,8 +64,6 @@ class CoordinateArray(
         )
 
     def __array__(self):
-        #FIXME: if repeat coordinates, add their data values together
-        #       maybe do at the constructor phase?
         arr = np.full(self.shape, fill_value=self.fill_value, dtype=self.dtype)
         arr[tuple(self.idxs)] = self.data
         return arr
