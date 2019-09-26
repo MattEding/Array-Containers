@@ -74,11 +74,16 @@ class CoordinateArray(
 
     def reshape(self, *shape, copy=True, order='C'):
         shape = np.array(shape).squeeze()
-        neg = np.flatnonzero(shape < 0)
-        if neg.size:
-            if neg.size > 1:
+        is_neg = (shape < 0)
+        neg_sum = is_neg.sum()
+        if neg_sum:
+            if neg_sum > 1:
+        # neg = np.flatnonzero(shape < 0)
+        # if neg.size:
+            # if neg.size > 1:
                 raise ValueError("can only specify one unknown dimension")
-            shape[neg] = self.size // -np.prod(shape)
+            shape[is_neg] = self.size // np.prod(shape[~is_neg])
+            # shape[neg] = self.size // -np.prod(shape)
 
         if shape.prod() != self.size:
             raise ValueError(
