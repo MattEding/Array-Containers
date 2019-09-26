@@ -72,6 +72,14 @@ class CoordinateArray(
         #TODO
         return NotImplemented
 
+    def astype(self, dtype, order='C', casting='unsafe', copy=True):
+        data = self._data.astype(dtype, order=order, casting=casting, copy=copy)
+        if copy:
+            return type(self)(data, self.idxs, self.shape, fill_value, copy=copy)
+        else:
+            self._data = data
+            return self
+
     def reshape(self, *shape, copy=True, order='C'):
         try:
             shape = np.array(shape).astype(int, casting='safe').squeeze()
@@ -97,6 +105,9 @@ class CoordinateArray(
             self.data, idxs, shape, self.fill_value, self.dtype, copy=copy
         )
 
+    def setflags(self, write=None, align=None, uic=None):
+        ...
+
     def sum_duplicates(self):
         """Eliminate duplicate entries by adding them together.
         This is an in-place operation.
@@ -106,6 +117,9 @@ class CoordinateArray(
         # do I need to copy self.data here?
         np.add.at(data, inverse, self.data)
         self._data = data
+
+    def transpose(self, *axes):
+        ...
 
     @property
     def nbytes(self):
