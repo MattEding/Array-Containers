@@ -1,3 +1,5 @@
+__all__ = ['FlagDescriptor']
+
 class FlagDescriptor:
     def __get__(self, instance, owner):
         return getattr(instance._flag_array.flags, self.name)

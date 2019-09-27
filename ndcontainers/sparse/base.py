@@ -151,8 +151,7 @@ class SparseArray(abc.ABC):
     def data(self):
         """A read-only view of the underlying 'data' array."""
         view = self._data.view()
-        view.setflags(write=0)
-        # view.flags['WRITEABLE'] = False
+        view.setflags(write=False)
         return view
 
     @property
@@ -166,7 +165,7 @@ class SparseArray(abc.ABC):
             raise ValueError(f"'fill_value' {self.fill_value!r} cannot be cast to {value!r}")
         dtype =  np.dtype(value)
         if dtype.itemsize != self.idxs.itemsize:
-            raise ValueError(f"{dtype!r} does not preserve shape with 'idxs'")
+            raise ValueError(f"'data' {dtype!r} does not preserve shape with 'idxs'")
         self._data.dtype = dtype
         
     @property
@@ -259,23 +258,17 @@ class SparseArray(abc.ABC):
         for C-style contiguous arrays or ``self.strides[0] == self.itemsize`` for
         Fortran-style contiguous arrays is true.
         """
-        # can I share flags between data and idxs at constructor?
-        # may need to make a flags wrapper that contains pointers to 
-        # underlying arrays and updates their flags in unison
-        return self.data.flags
+        return self._flags
 
     @flags.setter
     def flags(self, value):
-        #TODO: check to see if flags['FLAG'] = value will overwrite
-        #       if so, I will need to updage the idxs.flags too
         self._setter_not_writeable('flags')
 
     @property
     def idxs(self):
         """A read-only view of the underlying 'idxs' array."""
         view = self._idxs.view()
-        view.setflags(write=0)
-        # view.flags['WRITEABLE'] = False
+        view.setflags(write=False)
         return view
 
     @property

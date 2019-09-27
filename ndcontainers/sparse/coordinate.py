@@ -3,7 +3,7 @@ from numbers import Number
 import numpy as np
 
 from .base import SparseArray
-from ..utils import NDArrayReprMixin
+from ..utils import FlagsSynchronizer, NDArrayReprMixin
 
 
 __all__ = ['CoordinateArray']
@@ -11,21 +11,28 @@ __all__ = ['CoordinateArray']
 class CoordinateArray(
     np.lib.mixins.NDArrayOperatorsMixin, NDArrayReprMixin, SparseArray
 ):
-    def __init__(self, data, idxs, shape=None, fill_value=0, dtype=None, copy=False, sum_duplicates=True):
+    def __init__(self, data, idxs, shape=None, fill_value=0, dtype=None, copy=False, sum_duplicates=True, order='C'):
         self._data = np.array(data, dtype=dtype, copy=copy)
         if self.data.ndim != 1:
             raise ValueError(f"'data' must be 1d, not {self.data.ndim}d")
 
-        self._idxs = np.atleast_2d(np.array(idxs, dtype=np.uint, copy=copy))
+        self._idxs = np.atleast_2d(np.array(idxs, dtype=np.uint, copy=copy, order=order))
         if self.idxs.ndim != 2:
             raise ValueError(f"'idxs' must be 2d, not {self.idxs.ndim}d")
 
         if self.data.shape[-1] != self.idxs.shape[-1]:
             raise ValueError("'data' does not have 1-1 correspondence with 'idxs'")
 
-        # sum data values that have duplicate indices
+        #FIXME: when _idxs or _data is overritten, _flags loses the references
+        #       maybe use CoordinateArray.__setattr__ ---NOPE!
+        # 
+        #       try having FlagsSychronizer be initialized with names rather than
+        #       references and have it only reference the instance itself
+        #       and then do dynamic lookups with getattr!
+        # self._flags = FlagsSynchronizer(self._idxs, self._data, order=order)
+
         if sum_duplicates:
-            self.sum_duplicates()
+            self.sum_duplicates(order=order)
 
         # currently this does not allow for 0d/null shape --> sets shape to (1,)
         # the question is should a null CoordinateArray be allowed?
@@ -59,7 +66,7 @@ class CoordinateArray(
 
         return self._repr_(
             data, idxs, self.shape, self.fill_value, self.dtype,
-            ignore=('copy', 'sum_duplicates')
+            ignore=('copy', 'order', 'sum_duplicates')
         )
 
     def __array__(self):
@@ -108,15 +115,22 @@ class CoordinateArray(
     def setflags(self, write=None, align=None, uic=None):
         ...
 
-    def sum_duplicates(self):
+    def sum_duplicates(self, order='F'):
         """Eliminate duplicate entries by adding them together.
         This is an in-place operation.
+
+        Parameters
+        ----------
+        order : {'C', 'F'} (default='F')
+            Internally this method changes 'idxs' to Fortran contiguous
+            memory layout. Use this parameter to convert this layout outcome.
         """
-        self._idxs, inverse = np.unique(self.idxs, axis=1, return_inverse=True)
-        data = np.zeros_like(self.idxs[0], dtype=self.dtype)
+        idxs, inverse = np.unique(self.idxs, axis=1, return_inverse=True)
+        data = np.zeros_like(idxs[0], dtype=self.dtype)
         # do I need to copy self.data here?
         np.add.at(data, inverse, self.data)
         self._data = data
+        self._idxs = np.asarray(idxs, order=order)
 
     def transpose(self, *axes):
         ...
