@@ -26,12 +26,13 @@ class CoordinateArray(
         if self.data.shape[-1] != self.idxs.shape[-1]:
             raise ValueError("'data' does not have 1-1 correspondence with 'idxs'")
 
-        if sum_duplicates:
-            self.sum_duplicates()
 
-        # currently this does not allow for 0d/null shape --> sets shape to (1,)
-        # the question is should a null CoordinateArray be allowed?
-        min_shape = self.idxs.max(axis=1, initial=0) + 1
+
+        try:
+            min_shape = self.idxs.max(axis=1) + 1
+        except ValueError:
+            min_shape = ()
+
         if shape is None:
             self._shape = tuple(min_shape)
         else:
@@ -40,11 +41,14 @@ class CoordinateArray(
                 raise ValueError(f"shape length does not match idxs length")
             elif np.any(shape < min_shape):
                 raise ValueError(f"shape {tuple(shape)} values are too small for idxs")
-
-            self._shape = tuple(shape)
+            else:
+                self._shape = tuple(shape)
 
         #TODO: dynamic fill_value default based on dtype
         self.fill_value = fill_value
+
+        if sum_duplicates:
+            self.sum_duplicates()
 
     def __repr__(self):
         data = np.array2string(
@@ -140,7 +144,7 @@ class CoordinateArray(
             return self
 
     def reshape(self, *shape, copy=True):
-        shape = super().reshape(shape)
+        shape = super().reshape(*shape)
         raveled = np.ravel_multi_index(self.idxs, self.shape)
         unraveled = np.unravel_index(raveled, shape)
         idxs = np.array(unraveled, dtype=np.uint)
@@ -148,13 +152,12 @@ class CoordinateArray(
             self.data, idxs, shape, self.fill_value, self.dtype, copy=copy
         )
 
-    def setflags(self, write=None, align=None, uic=None):
-        ...
-
     def sum_duplicates(self):
         """Eliminate duplicate entries by adding them together.
         This is an in-place operation.
         """
+        if not self.size:
+            return
         #FIXME: if idxs.size == 0 -> np.unique fails
         self._idxs, inverse = np.unique(self.idxs, axis=1, return_inverse=True)
         data = np.zeros_like(self.idxs[0], dtype=self.dtype)
