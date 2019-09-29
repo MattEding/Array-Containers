@@ -1,4 +1,7 @@
-from .flag import FlagsSynchronizer
 from .mixins import NDArrayReprMixin
+from .validate import is_broadcastable
 
-__all__ = ['FlagsSynchronizer', 'NDArrayReprMixin']
+__all__ = [
+    'NDArrayReprMixin',
+    'is_broadcastable',
+]
