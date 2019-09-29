@@ -7,7 +7,16 @@ from numpy import testing
 from ndcontainers.sparse import CoordinateArray
 
 
-#TODO: make these fixtures
+@pytest.fixture
+def coo_reshape():
+    data = [1, 2, 3]
+    idxs = [0, 10, 20]
+    shape = 24
+    coo = CoordinateArray(data, idxs, shape)
+    return coo
+
+
+# TODO: make these fixtures?
 # identity matrix
 coo_ident_3x3 = CoordinateArray(
     data=[1, 1, 1],
@@ -31,6 +40,15 @@ coo_prime_10 = CoordinateArray(
 arr_prime_10 = np.array([0, 0, 2, 3, 0, 5, 0, 7, 0, 0])
 
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# TESTS
+
+def test_null_coo():
+    coo = CoordinateArray([], [])
+    assert coo.size == 0
+    assert coo.shape == ()
+
+
 @pytest.mark.parametrize(
     'coo, arr',
     [(coo_ident_3x3, arr_ident_3x3), (coo_prime_10, arr_prime_10)],
@@ -48,25 +66,17 @@ def test_array_conversion(coo, arr):
             testing.assert_array_equal(dense, arr)
 
 
-@pytest.fixture
-def coo_reshape():
-    data = [1, 2, 3]
-    idxs = [0, 10, 20]
-    shape = 24
-    coo = CoordinateArray(data, idxs, shape)
-    return coo
-
-
 @pytest.mark.parametrize(
     'newshape',
-    [(24, 1), (1, 24, 1), (2, 2, 2, 3), (8, 3), (-1, 4), (12, -5), (2, -1, 3)],
+    [(24, 1), (1, 24, 1), (2, 2, 2, 3), (8, 3), (-1, 4), (12, -5), (2, -1, 3), (-1,)],
     ids=repr,
 )
 def test_reshape(newshape, coo_reshape):
     arr = np.array(coo_reshape)
 
     #TODO - factor out as meta parametrize
-    for container in (tuple, list, np.array):
+    # for container in (tuple, list, np.array):  # ndarray raises DeprecationWarning but passes
+    for container in (tuple, list):
         newshape = container(newshape)
 
         coo_unpacked = coo_reshape.reshape(*newshape)
@@ -82,22 +92,25 @@ def test_reshape(newshape, coo_reshape):
 
 
 @pytest.mark.parametrize(
-    'shape',
-    [(-1,), (-1, -1, 24), (2, -1, -1), (-3, -2, -4)],
+    'newshape',
+    [(-1, -1, 24), (2, -1, -1), (-3, -2, -4)],
     ids=repr,
 )
-def test_reshape_neg_error(shape, coo_reshape):
-    pass
+def test_reshape_neg_error(newshape, coo_reshape):
+    match = "can only specify one unknown dimension"
+    with pytest.raises(ValueError, match=match):
+        coo_reshape.reshape(newshape)
 
 
-@pytest.mark.skip()
 @pytest.mark.parametrize(
-    'shape',
-    [(), (-1, -1, 24), (2, -1, -1), (-3, -2, -4)],
+    'newshape',
+    [(), (11,), (2, 24)],
     ids=repr,
 )
-def test_reshape_size_error(shape):
-    pass
+def test_reshape_size_error(newshape, coo_reshape):
+    match = r"cannot reshape \w+ of size \d+ into shape \((\d(, )?)*\)"
+    with pytest.raises(ValueError, match=match):
+        coo_reshape.reshape(newshape)
 
 
 #TODO: to emulate array(0).reshape(())

@@ -65,7 +65,7 @@ class Array(abc.ABC):
 
     @abc.abstractmethod
     def reshape(self, *shape, copy=True):
-        """Gives a new shape to a sparse array without changing its data.
+        """Gives a new shape to a array without changing its data.
 
         Parameters
         ----------
@@ -78,15 +78,15 @@ class Array(abc.ABC):
         copy : bool, optional
             Indicates whether or not attributes of self should be copied
             whenever possible. The degree to which attributes are copied varies
-            depending on the type of sparse array being used.
+            depending on the type of array being used.
 
         Returns
         -------
-        reshaped_array : SparseArray
-            A sparse array with the given `shape`, not necessarily of the same
+        reshaped_array :Array
+            A array with the given `shape`, not necessarily of the same
             format as the current object.`
         """
-        if not len(shape):
+        if shape == ((),):
             shape = np.array([])
         else:
             try:
@@ -103,9 +103,13 @@ class Array(abc.ABC):
             shape[is_neg] = self.size // np.prod(shape[~is_neg])
 
         if shape.prod() != self.size:
+            try:
+                shape = tuple(shape)
+            except TypeError:
+                shape = ()
             raise ValueError(
                 f"cannot reshape {type(self).__name__} of size"
-                f" {self.size} into shape {tuple(shape)}"
+                f" {self.size} into shape {shape}"
             )
         return shape
 
@@ -181,7 +185,7 @@ class Array(abc.ABC):
     @property
     @abc.abstractmethod
     def shape(self):
-        """Tuple of sparse array dimensions."""
+        """Tuple of array dimensions."""
         raise NotImplementedError
 
     @shape.setter
@@ -191,8 +195,11 @@ class Array(abc.ABC):
 
     @property
     def size(self):
-        """Number of elements in the sparse array including "non-zero" elements."""
-        return np.prod(self.shape, dtype=int)
+        """Number of elements in the array including "non-zero" elements."""
+        try:
+            return np.prod(self.shape, dtype=int, initial=None)
+        except ValueError:
+            return 0
 
     @size.setter
     def size(self, value):
@@ -200,7 +207,7 @@ class Array(abc.ABC):
 
     @property
     def T(self):
-        """The transposed sparse array."""
+        """The transposed array."""
         return self.transpose()
 
     @T.setter
