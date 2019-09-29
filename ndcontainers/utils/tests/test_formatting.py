@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 
 from ndcontainers.mask import MaskedArray
+from ndcontainers.sparse import CoordinateArray
 
 
 # TODO # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -11,6 +12,27 @@ from ndcontainers.mask import MaskedArray
 # - use different mask_displays
 # - do I want singleton mask value if nothing is masked?
 # 
+
+data = np.array([1, 2, 3, 4, 5, 6, 7])
+
+idxs = np.array([
+    [0, 0, 1, 3, 1, 0, 0],
+    [0, 2, 1, 3, 1, 0, 0],
+])
+
+coo = CoordinateArray(data, idxs, shape=(10, 10))
+
+repr_coo = '''
+CoordinateArray(data=[14,  2,  8,  4],
+                idxs=[[0, 0, 1, 3],
+                      [0, 2, 1, 3]],
+               shape=(10, 10),
+          fill_value=0,
+               dtype=int64)
+'''.strip()
+
+str_coo = '<CoordinateArray: shape=(10, 10), nnz=4, dtype=int64, fill_value=0>'
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # 1D Params
@@ -101,30 +123,32 @@ str_2d_object = '''
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Tests
 
-ids = [f'ma_{ma.ndim}d_{ma.dtype}' for ma in (ma_1d_uint8, ma_2d_object, ma_3d_int64)]
+ids = [f'ma_{ma.ndim}d_{ma.dtype}' for ma in (ma_1d_uint8, ma_2d_object, ma_3d_int64)] + ['coo']
 
 
 @pytest.mark.parametrize(
-    'masked_array, expected',
+    'array, expected',
     [
         (ma_1d_uint8, repr_1d_uint8),
         (ma_2d_object, repr_2d_object),
         (ma_3d_int64, repr_3d_int64),
+        (coo, repr_coo),
     ],
     ids=ids,
 )
-def test_repr(masked_array, expected):
-    assert repr(masked_array) == expected
+def test_repr(array, expected):
+    assert repr(array) == expected
 
 
 @pytest.mark.parametrize(
-    'masked_array, expected',
+    'array, expected',
     [
         (ma_1d_uint8, str_1d_uint8),
         (ma_2d_object, str_2d_object),
         (ma_3d_int64, str_3d_int64),
+        (coo, str_coo),
     ],
     ids=ids,
 )
-def test_str(masked_array, expected):
-    assert str(masked_array) == expected
+def test_str(array, expected):
+    assert str(array) == expected
