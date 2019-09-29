@@ -47,6 +47,7 @@ def test_null_coo():
     coo = CoordinateArray([], [])
     assert coo.size == 0
     assert coo.shape == ()
+    assert np.array(coo).item() == coo.fill_value
     coo.reshape(())
     coo.reshape([])
 
@@ -70,7 +71,7 @@ def test_array_conversion(coo, arr):
 
 @pytest.mark.parametrize(
     'newshape',
-    [(24, 1), (1, 24, 1), (2, 2, 2, 3), (8, 3), (-1, 4), (12, -5), (2, -1, 3), (-1,)],
+    [(24, 1), (1, 24, 1), (2, 2, 2, 3), (8, 3), (-1, 4), (12, -5), (2, -1, 3), (-1,), (24,)],
     ids=repr,
 )
 def test_reshape(newshape, coo_reshape):
@@ -124,4 +125,3 @@ def test_reshape_type_error(newshape, coo_reshape):
         coo_reshape.reshape(newshape)
 
 #FIXME: coo.shape is (10, 10) --> coo.shape = 0 raises wrong message
-
