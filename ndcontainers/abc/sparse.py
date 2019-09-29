@@ -9,6 +9,8 @@ __all__ = ['SparseArray']
 
 
 class SparseArray(Array):
+    # pylint: disable=no-member
+
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # ABSTRACT
 
@@ -69,6 +71,7 @@ class SparseArray(Array):
         if not np.can_cast(self.fill_value, value):
             raise ValueError(f"'fill_value' {self.fill_value!r} cannot be cast to {value!r}")
         dtype = np.dtype(value)
+        # may want to move to CoordinateArray since other SparseArrays may not use self.idxs
         if dtype.itemsize != self.idxs.itemsize:
             raise ValueError(f"'data' {dtype!r} does not preserve shape with 'idxs'")
         self._data.dtype = dtype

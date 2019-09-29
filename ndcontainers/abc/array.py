@@ -86,30 +86,30 @@ class Array(abc.ABC):
             A array with the given `shape`, not necessarily of the same
             format as the current object.`
         """
-        if shape == ((),):
+        if shape in [((),), ([],)]:
             shape = np.array([])
         else:
             try:
                 # `squeeze` for shape = dim1, ..., dimN *OR* (dim1, ..., dimN)
                 shape = np.array(shape).astype(int, casting='safe').squeeze()
             except TypeError:
-                raise ValueError("'shape' cannot consist of non-integers")
+                raise TypeError(
+                    f"'{type(shape).__name__}' object cannot be interpreted as an integer"
+                )
 
-        is_neg = shape < 0
-        neg_sum = is_neg.sum()
-        if neg_sum > 1:
-            raise ValueError("can only specify one unknown dimension")
-        elif neg_sum:
-            shape[is_neg] = self.size // np.prod(shape[~is_neg])
+            is_neg = shape < 0
+            neg_sum = is_neg.sum()
+            if neg_sum > 1:
+                raise ValueError("can only specify one unknown dimension")
+            elif neg_sum:
+                shape[is_neg] = self.size // np.prod(shape[~is_neg])
 
-        if shape.prod() != self.size:
-            try:
-                shape = tuple(shape)
-            except TypeError:
-                shape = ()
+        if not shape.size and not self.size:
+            pass
+        elif (shape.prod() != self.size):
             raise ValueError(
                 f"cannot reshape {type(self).__name__} of size"
-                f" {self.size} into shape {shape}"
+                f" {self.size} into shape {tuple(shape.flat)}" # `flat` for 0-d array iter
             )
         return shape
 
@@ -222,8 +222,8 @@ class Array(abc.ABC):
     def __bool__(self):
         if not self.size:
             warnings.warn(
-                "The truth value of an empty array is ambiguous. Returning False,"
-                " but in future this will result in an error."
+                "The truth value of an empty array is ambiguous."
+                " Returning False, but in future this will result in an error."
                 " Use `array.size > 0` to check that an array is not empty.",
                 DeprecationWarning
             )

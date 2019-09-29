@@ -47,6 +47,8 @@ def test_null_coo():
     coo = CoordinateArray([], [])
     assert coo.size == 0
     assert coo.shape == ()
+    coo.reshape(())
+    coo.reshape([])
 
 
 @pytest.mark.parametrize(
@@ -75,7 +77,6 @@ def test_reshape(newshape, coo_reshape):
     arr = np.array(coo_reshape)
 
     #TODO - factor out as meta parametrize
-    # for container in (tuple, list, np.array):  # ndarray raises DeprecationWarning but passes
     for container in (tuple, list):
         newshape = container(newshape)
 
@@ -104,13 +105,23 @@ def test_reshape_neg_error(newshape, coo_reshape):
 
 @pytest.mark.parametrize(
     'newshape',
-    [(), (11,), (2, 24)],
+    [(), 11, (11,), (2, 24)],
     ids=repr,
 )
 def test_reshape_size_error(newshape, coo_reshape):
-    match = r"cannot reshape \w+ of size \d+ into shape \((\d(, )?)*\)"
+    match = r"cannot reshape \w+ of size \d+ into shape \((\d(, ?)?)*\)"
     with pytest.raises(ValueError, match=match):
         coo_reshape.reshape(newshape)
 
+@pytest.mark.parametrize(
+    'newshape',
+    [((),), (2., 12.), (2., 12), (2, 12.), ('2', '12'), tuple],
+    ids=repr,
+)
+def test_reshape_type_error(newshape, coo_reshape):
+    match = r"'\w+' object cannot be interpreted as an integer"
+    with pytest.raises(TypeError, match=match):
+        coo_reshape.reshape(newshape)
 
-#TODO: to emulate array(0).reshape(())
+#FIXME: coo.shape is (10, 10) --> coo.shape = 0 raises wrong message
+

@@ -26,8 +26,6 @@ class CoordinateArray(
         if self.data.shape[-1] != self.idxs.shape[-1]:
             raise ValueError("'data' does not have 1-1 correspondence with 'idxs'")
 
-
-
         try:
             min_shape = self.idxs.max(axis=1) + 1
         except ValueError:
@@ -145,6 +143,8 @@ class CoordinateArray(
 
     def reshape(self, *shape, copy=True):
         shape = super().reshape(*shape)
+        if not shape.size:
+            return self
         raveled = np.ravel_multi_index(self.idxs, self.shape)
         unraveled = np.unravel_index(raveled, shape)
         idxs = np.array(unraveled, dtype=np.uint)
@@ -158,7 +158,7 @@ class CoordinateArray(
         """
         if not self.size:
             return
-        #FIXME: if idxs.size == 0 -> np.unique fails
+
         self._idxs, inverse = np.unique(self.idxs, axis=1, return_inverse=True)
         data = np.zeros_like(self.idxs[0], dtype=self.dtype)
         np.add.at(data, inverse, self.data)
@@ -171,3 +171,5 @@ class CoordinateArray(
     @property
     def nbytes(self):
         return self.data.nbytes + self.idxs.nbytes
+
+    #TODO: SparseArray.dtype.setter since self.idxs used

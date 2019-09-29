@@ -32,5 +32,5 @@ def get_broadcast_shape(*arrays_or_shapes):
         if any(v not in (1, mx) for v in vals):
             raise ValueError("shapes cannot be broadcasted together")
         else:
-            shape[-i] = mx
+            shape[-i] = mx # pylint: disable=unsupported-assignment-operation
     return tuple(shape)
