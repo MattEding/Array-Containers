@@ -11,25 +11,26 @@ from ..utils import is_broadcastable
 
 __all__ = ['CoordinateArray']
 
+# FIXME: if ndim > 32 -> raise Warning in init -- ndarray doesn't support 33+
+#           error arises during reshape and __array__
+
+
 class CoordinateArray(
     np.lib.mixins.NDArrayOperatorsMixin, NDArrayReprMixin, SparseArray
 ):
     # is there a real advantage to idxs *before* data? if so change order
-    def __init__(self, data, idxs, shape=None, fill_value=0, dtype=None, copy=False, sum_duplicates=True):
+    def __init__(self, data, idxs, shape=None, fill_value=None, dtype=None, copy=False, sum_duplicates=True):
         self._idxs = np.atleast_2d(np.array(idxs, dtype=np.uint, copy=copy))
         if self.idxs.ndim != 2:
             raise ValueError(f"'idxs' must be 2d, not {self.idxs.ndim}d")
 
         #TODO: if shape=() then data should be scalar array of value = fill_value
-        #TODO: allow scalar value for data and broadcast to idxs
         if not np.iterable(data):
             data = tuple(itertools.repeat(data, self._idxs.shape[-1]))
 
         self._data = np.array(data, dtype=dtype, copy=copy)
         if self.data.ndim != 1:
             raise ValueError(f"'data' must be 1d, not {self.data.ndim}d")
-
-
 
         if self.data.shape[-1] != self.idxs.shape[-1]:
             raise ValueError("'data' does not have 1-1 correspondence with 'idxs'")
@@ -44,13 +45,14 @@ class CoordinateArray(
         else:
             shape = np.broadcast_arrays(shape).pop().astype(np.uint).ravel()
             if len(shape) != len(min_shape):
-                raise ValueError(f"shape length does not match idxs length")
+                raise ValueError(f"'shape' length does not match 'idxs' length")
             elif np.any(shape < min_shape):
-                raise ValueError(f"shape {tuple(shape)} values are too small for idxs")
+                raise ValueError(f"'shape' {tuple(shape)} values are too small for 'idxs'")
             else:
                 self._shape = tuple(shape)
 
-        #TODO: dynamic fill_value default based on dtype
+        if fill_value is None:
+            fill_value = np.zeros((), self.dtype).item()
         self.fill_value = fill_value
 
         if sum_duplicates:
@@ -134,14 +136,13 @@ class CoordinateArray(
 
     def __array__(self):
         arr = np.full(self.shape, fill_value=self.fill_value, dtype=self.dtype)
-        try:
-            arr[tuple(self.idxs)] = self.data
-        except IndexError:  # TypeError, ValueError maybe for scalar arrays
-            pass # 0-d or scalar array
+        raveled_idxs = np.ravel_multi_index(self.idxs, (self.shape or 0))
+        arr.put(raveled_idxs, self.data)
         return arr
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        #TODO
+        if method == '__call__':
+            pass
         return NotImplemented
 
     def astype(self, dtype, casting='unsafe', copy=True):
@@ -155,6 +156,7 @@ class CoordinateArray(
     def reshape(self, *shape, copy=True):
         shape = super().reshape(*shape)
         if not shape.size:
+            # TODO: copy=copy
             return self
         raveled = np.ravel_multi_index(self.idxs, self.shape)
         unraveled = np.unravel_index(raveled, shape)

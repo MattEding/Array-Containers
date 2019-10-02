@@ -197,7 +197,7 @@ class Array(abc.ABC):
     def size(self):
         """Number of elements in the array including "non-zero" elements."""
         try:
-            return np.prod(self.shape, dtype=int, initial=None)
+            return np.prod(self.shape, dtype=np.uint64, initial=None)
         except ValueError:
             return 0
 

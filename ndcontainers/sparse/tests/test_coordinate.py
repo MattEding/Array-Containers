@@ -114,6 +114,7 @@ def test_reshape_size_error(newshape, coo_reshape):
     with pytest.raises(ValueError, match=match):
         coo_reshape.reshape(newshape)
 
+
 @pytest.mark.parametrize(
     'newshape',
     [((),), (2., 12.), (2., 12), (2, 12.), ('2', '12'), tuple],
