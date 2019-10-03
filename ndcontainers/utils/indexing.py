@@ -55,7 +55,10 @@ def ravel_sparse_multi_index(multi_index, dims):
 
     out = np.empty(multi_index.shape[1], dtype=np.uint)
     np.dot(multi_index.T, coefs, out=out)
-    return out
+    try:
+        return out.item()
+    except ValueError:
+        return out
 
 
 def unravel_sparse_index(indices, shape):
