@@ -38,8 +38,21 @@ def ravel_sparse_multi_index(multi_index, dims):
     This can handle higher dimensions than 'np.ravel_multi_index', but when
     doing so, converting to a dense array will raise errors.
     """
+    # TODO: multi_index as (tuple, list) 1d -> out.item()
+    # TODO: error tests
     coefs = _coefs(dims)
-    multi_index = multi_index.astype(np.uint)
+    multi_index = np.asarray(multi_index).astype(np.uint)
+    if multi_index.ndim == 1:
+        multi_index = np.atleast_2d(multi_index).T
+
+    try:
+        min_shape = multi_index.max(axis=1) + 1
+    except ValueError:
+        min_shape = ()
+
+    if np.any(dims < min_shape):
+        raise ValueError("invalid entry in coordinates array")
+
     out = np.empty(multi_index.shape[1], dtype=np.uint)
     np.dot(multi_index.T, coefs, out=out)
     return out

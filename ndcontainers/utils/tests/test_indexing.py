@@ -5,6 +5,9 @@ from numpy import testing
 from ndcontainers.utils import ravel_sparse_multi_index, unravel_sparse_index
 
 
+# TODO: test () shape
+
+
 @pytest.mark.parametrize(
     'shape',
     [(4, 4, 4), (10, 6, 30)],
@@ -48,8 +51,9 @@ def test_larger_dims():
 
     ravel = ravel_sparse_multi_index(multi_index, shape)
 
-    match = ("dimensions are too large; arrays and shapes with a total size"
-             " greater than 'intp' are not supported.")
+    # match = ("dimensions are too large; arrays and shapes with a total size"
+    #          " greater than 'intp' are not supported.")
+    match = r"index \d+ is out of bounds for array with size -?\d+"
     with pytest.raises(ValueError, match=match):
         np.unravel_index(ravel, shape)
 
