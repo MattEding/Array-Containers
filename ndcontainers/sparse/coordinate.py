@@ -84,6 +84,7 @@ class CoordinateArray(
 
     def __getitem__(self, idx):
         # TODO: slicing & fancy indexing & masks
+        # TODO: negative indices
         try:
             ravel = ravel_sparse_multi_index(idx, self.shape)
         except ValueError:
@@ -92,64 +93,15 @@ class CoordinateArray(
             # IndexError: too many indices for array
         loc = self.idxs.searchsorted(ravel)
         if self.idxs[loc] == ravel:
-            return self.data[loc]
+            return self.data[loc] # FIXME: returns an array; not a scalar...
         else:
             return self.fill_value
 
+    def __contains__(self, item):
+        return item in self.data
+
     def __eq__(self, other):
-        if not is_broadcastable(self, other):
-            msg = "elementwise comparison failed; this will raise an error in the future."
-            warnings.warn(msg, DeprecationWarning)
-            return False
-
-        if isinstance(other, type(self)):
-            # need to sum_duplicates since set routines used
-            self.sum_duplicates()
-            other.sum_duplicates()
-
-            new_shape = ... # broadcast shape
-            # may need to broadcast idxs and data arrays appropriately
-            self_raveled = np.ravel_multi_index(self.idxs, new_shape)
-            other_raveled = np.ravel_multi_index(other.idxs, new_shape)
-
-            # eq must not have any xor, so rule that out first
-            # and must have the same lengths
-            if len(self_raveled) != len(other_raveled):
-                return 'nevermind i want elemwise comparison'
-
-            # elemwise compare eq with fill values incorporated
-            self_and_other = np.intersect1d(self_raveled, other_raveled)
-            # all false
-            self_diff_other = np.setdiff1d(self_raveled, other_raveled)
-            # all false
-            other_diff_self = np.setdiff1d(other_raveled, self_raveled)
-
-            new_raveled = np.hstack([self_and_other, self_diff_other, other_diff_self])
-            new_idxs = np.unravel_index(new_raveled, new_shape)
-
-            new_fill_value = self.fill_value + other.fill_value
-            new_dtype = np.promote_types(self.dtype, other.dtype)
-            new_data = np.empty(new_shape, new_dtype)
-
-            # Oops this is for __add__
-            # but I can generalize this idea in __array_func__ for __call__
-            stop = self_and_other.size
-            new_data[:stop] = self[self_and_other] + other[self_and_other]
-
-            start = self_and_other.size
-            stop += self_diff_other.size
-            new_data[start:stop] = self[self_diff_other] + other.fill_value
-
-            start += self_diff_other.size
-            new_data[start:] = other[other_diff_self] + self.fill_value
-
             ...
-
-        elif isinstance(other, np.ndarray):
-            return np.array(self) == other
-        else:
-            mask = self.data == other
-            return type(self)(mask, self.idxs, self.shape, fill_value=False, dtype=bool, sum_duplicates=False)
 
     def __array__(self):
         arr = np.full(self.shape, fill_value=self.fill_value, dtype=self.dtype)
